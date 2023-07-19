@@ -1,0 +1,24 @@
+﻿Вы можете принудительно закрыть файл и сбросить подключение пользователя по ID SMB сессии. Сначала нужно определить ID сессии открытого файла:
+
+Openfiles /Query /s mskfs01 /fo csv | find /i "farm"| find /i ".xlsx"
+
+
+Теперь можно принудительно отключить пользователя по полученному идентификатору SMB сессии:
+
+Openfiles /Disconnect /s mskfs01 /ID 67109098
+
+
+Openfiles Disconnect - отключение файла по id сессии
+Можно принудительно сбросить все сессии и освободить все файлы, открытые определённым пользователем:
+
+openfiles /disconnect /s mskfs01 /u corp\aivanova /id *
+
+openfiles /disconnect /id *
+
+Для вывода полного списка открытых файлов на сервере, выполните команду:
+Get-SMBOpenFile
+
+Чтобы закрыть файл используется командлет Close-SmbOpenFile . Закрыть файл можно по ID:
+Close-SmbOpenFile -FileId 4123426323239
+
+https://winitpro.ru/index.php/2018/02/12/smb-open-files-on-windows-server/#:~:text=%D0%92%20%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D0%B8%20PowerShell%20%D0%B2%20Windows,%D1%81%20%D0%BF%D0%BE%D0%BC%D0%BE%D1%89%D1%8C%D1%8E%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D0%BB%D0%B5%D1%82%D0%B0%20Get%2DSMBOpenFile.

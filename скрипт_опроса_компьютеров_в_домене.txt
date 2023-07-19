@@ -1,0 +1,78 @@
+все через powershell
+-------------------------------------------------------------------
+
+Получить список серверов в домене с версией ОС, IP адресом и установленным Service Pack:
+
+Get-ADComputer -Filter 'operatingsystem -like "*Windows server*" -and enabled -eq "true"' -Properties  Name,Operatingsystem, OperatingSystemVersion, OperatingSystemServicePack,IPv4Address | Sort-Object -Property Operatingsystem | Select-Object -Property Name,Operatingsystem, OperatingSystemVersion, OperatingSystemServicePack, IPv4Address| ft -Wrap –Auto
+
+----------------------------------------------------------------
+
+Выбрать все рабочие станции с ОС Windows 10:
+
+Get-ADComputer -Filter {OperatingSystem -like '*Windows 10*'}
+
+
+----------------------------------------------------------------
+
+
+Получить список компьютеров в определенном OU, имена которых начинаются с BuhPC:
+но тут не сработало для сотекса
+
+Get-ADComputer -Filter {Name -like "BuhPC*"} -SearchBase ‘OU=Moscow,DC=winitpro,DC=loc’  -Properties IPv4Address | Format-table Name,DNSHostName,IPv4Address | ft -Wrap –Auto
+
+При поиске по OU вы можете использовать дополнительный параметр -SearchScope 1, который означает, что нужно искать только в корневом разделе. Параметр -SearchScope 2 означает рекурсивный поиск компьютеров во всех вложенных OU.
+
+------------------------------------------------------------------
+
+Получить OU текущего компьютера можно так:
+(тут же и узнаем как прописано OU и пр, например OU=Computers,OU=Sotex,OU=Remote,DC=gaz,DC=ru)
+
+(Get-ADOrganizationalUnit -Identity $(($adComputer = Get-ADComputer -Identity $env:COMPUTERNAME).DistinguishedName.SubString($adComputer.DistinguishedName.IndexOf("OU=")))).DistinguishedName
+
+------------------
+
+и можем получить
+список компьютеров в OU
+
+Get-ADComputer -Filter * -SearchBase "OU=Computers,OU=Sotex,OU=Remote,DC=gaz,DC=ru"
+
+----------------------------------------------------------------
+
+список компьютеров в OU с отфильтрованными параметрами
+
+Get-ADComputer -Filter * -SearchBase "OU=Computers,OU=Sotex,OU=Remote,DC=gaz,DC=ru" -Properties Name,OperatingSystemVersion,IPv4Address,DNSHostName | Sort-Object Name | Format-table Name,OperatingSystemVersion,IPv4Address,DNSHostName | ft -Wrap –Auto
+
+------------------
+можно фильтровать вывод findstr "19044" - тут отобразятся строки с 19044
+
+Get-ADComputer -Filter * -SearchBase "OU=Computers,OU=Sotex,OU=Remote,DC=gaz,DC=ru" -Properties Name,OperatingSystemVersion,IPv4Address,DNSHostName | Sort-Object Name | Format-table Name,OperatingSystemVersion,IPv4Address,DNSHostName | ft -Wrap -Auto | findstr "19044"
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+оригиналльная строка для отображения компьютеров sotex
+
+Get-ADComputer -Filter * -SearchBase "OU=Computers,OU=Sotex,OU=Remote,DC=gaz,DC=ru" -Properties Name,Operatingsystem, OperatingSystemVersion, IPv4Address | Format-table Name,DNSHostName,IPv4Address | ft -Wrap –Auto
+----------------------------------------------------------------------
+
+информация о пользователе
+
+Get-ADUser metelkovas -Properties * 
+----------------------------------------------------------------------
+много информации о пользователе
+
+Get-ADUser metelkovas -Properties * | fl Surname, GivenName, dist*, HomePage
+----------------------------------------------------------------------
+
+Get-EventLog -logname Security -InstanceId 4624 -after (Get-Date -hour 0 -minute 0 -Second 0)| where {$_.message -match "Logon Type:\s+3"} | where {$_.message -match "metelkovas"}
+
+
+Проверка здоровья контроллеров домена Active Directory и репликации
+https://winitpro.ru/index.php/2021/04/14/proverka-sostoyaniya-kontrollerov-domena-active-directory-i-replikacii/
+
+
+Получаем логи (историю) входа пользователя в домен AD
+https://winitpro.ru/index.php/2020/04/23/user-domain-login-history-powershell/
+
+
+Настройка синхронизации времени по NTP с помощью групповых политик
+https://winitpro.ru/index.php/2017/01/06/nastrojka-sinxronizacii-vremeni-po-ntp-s-pomoshhyu-gruppovyx-politik/
+

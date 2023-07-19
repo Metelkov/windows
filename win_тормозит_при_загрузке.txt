@@ -1,0 +1,10 @@
+узел службы: локальная система инструменты управления win + тормозит при загрузке
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DISM.exe /Online /Cleanup-image /Restorehealth
+sfc /scannow
+net stop bits
+cd %systemroot%
+Ren SoftwareDistribution SoftwareDistribution.old
+rd SoftwareDistribution.old /s /q
+net start bits
+net start wuauserv

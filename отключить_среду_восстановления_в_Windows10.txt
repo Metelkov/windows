@@ -1,0 +1,6 @@
+отключить среду восстановления в Windows 10
+reagentc /info
+или
+bcdedit /set {current} recoveryenabled no
+bcdedit /set {current} recoveryenabled yes
+

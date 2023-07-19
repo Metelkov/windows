@@ -1,0 +1,173 @@
+подключаемся к компьютеру
+enter-pssession -computername <computer>
+enter-pssession -computername katkova
+
+
+Получаем список установленных 64 битных программ с помощью Windows PowerShell
+
+Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | Format-Table -AutoSize
+
+Похоже, указанные в статье команды «Get-ItemProperty …» выводят списки 32-разрядных приложений в 64-разрядной системе. Для получения списка 64-разрядных приложений нужно повторить команду, исключив «Wow6432Node\» в пути
+Список программ выводимый с помощью PowerShell не полный. Например, нет в списке программы «7-zip».
+Наверное потому, что cmdlet Get-ItemProperty не совсем подходит для этого, ведь не все программы прописываются по тому пути в реестре.
+
+
+Получаем список установленных 32 битных программ с помощью Windows PowerShell
+
+Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | Format-Table -AutoSize
+
+тут покажет 7-zip причем 2 раза, т.к. было установлено 2 компонента от 7-zip
+
+
+покажет 7-zip (1 компонент), но список не полный, не показывает foxit
+wmic product get name,version
+Get-CimInstance win32_product
+Get-WmiObject -Class Win32_Product | Select-Object -Property Name
+
+
+покажет все установленное через провайдеры, но не очень удобно, хотя есть параметры
+
+Get-Package
+
+список провайдеров:
+Get-PackageProvider
+
+Чтобы вывести список программ, установленных с помощью определенного провайдера, выполните:
+Get-Package -ProviderName Programs -IncludeWindowsInstaller
+
+
+
+Список установленных приложений Microsoft Store
+Get-AppxPackage –AllUsers | Select Name, PackageFullName
+
+
+
+Удаление установленных программ с помощью WMI
+смотрим что установлено
+wmic product get name,version
+
+Для тихого удаления программы из этого списка можно использовать такую команду:
+wmic product where name="VMware vCenter Converter Standalone" call uninstall /nointeractive
+
+Команда вызовет WMI метод удаления программы VMware vCenter Converter Standalone через Windows Installer.
+
+Executing (\\COMPName\ROOT\CIMV2:Win32_Product.IdentifyingNumber="{PROGRAM_GUID}",Name="VMware vCenter Converter Standalone",Version="6.2.0.8466193")->Uninstall()
+Если удаление программы выполнено успешно, она вернет:
+
+Method execution successful. Out Parameters: instance of __PARAMETERS { 
+ 
+ReturnValue = 0; };
+Аналогичные PowerShell команды для вывода и удаления программ через WMI:
+
+Get-WmiObject Win32_Product | ft name,version,vendor,packagename
+(Get-WmiObject Win32_Product -Filter "Name = 'XXX'").Uninstall()
+
+Чтобы удалить программу на удаленном компьютере, нужно добавить параметр –ComputerName. Например, чтобы удалить Microsoft Office на удаленном компьютере, выполните:
+
+$apps = Get-WmiObject -Class Win32_Product -ComputerName wks-pc11s22 |where name -Like "Office 16 Click-to-Run*"
+$apps.uninstall()
+
+Однако, такой способ удаления программы не будет универсальным. Если вы сравните список программ, который возвращается через WMI namespace и список программ в панели управления Windows 10 (команда ms-settings:appsfeatures ), вы увидите, что они отличаются. Команда вывела список программ, установленных через Windows Installer. В списке нет большинства пользовательских программ (например, браузеров). Также не выводятся UWP программы из Microsoft Store, установленные модули PowerShell (через PowerShellGet) и т.д.
+
+
+
+
+
+Удалить программу на удаленном компьютере с помощью PowerShell модуля Package Manager
+смотрим что установлено
+Get-Package
+Чтобы вывести список программ, установленных с помощью определенного провайдера, выполните:
+Get-Package -ProviderName Programs -IncludeWindowsInstaller
+
+
+Для удаления программы нужно использовать командлет Uninstall-Package (сработало, но не все, отдельный модуль 7-zip не удалился, хотя хз что это за модуль)
+Get-Package -Name "Notepad++*" | Uninstall-Package
+
+
+Можно удалить установленный PowerShell модуль. Например, чтобы удалить все модули VMware.PowerCLI,
+но будет предупреждение и сам он ничего не сделает не установит nuget и не удлалит после устаовки  (
+Поставщик "nuget v2.8.5.208" не установлен. nuget можно вручную скачать с https://onegetcdn.azureedge.net/providers/Microsoft.PackageManagement.NuGetProvider-2.8.5.208.dll и установить.  ):
+
+Get-Package -ProviderName PowerShellGet -Name "VMware.*" | Uninstall-Package
+
+Для удаления программы на удаленном компьютер, воспользуйтесь командлетом Invoke-Command:
+Invoke-Command -ComputerName Msk-Ser01 -ScriptBlock { Get-Package -Name "Notepad++*" | Uninstall-Package}
+
+
+WinRM PowerShell Remoting можно включить на компьютерах с помощью GPO (ссылка).
+Данный модуль можно использовать только для удаления программ Win32 и модулей. Для удаления UWP программ Microsoft Store нужно использовать PowerShell командлеты Remove-AppxPackage и Remove-AppxProvisionedPackage (см. Пример в статье).
+
+
+
+установить программу через powershell дистриб которой есть на локальном компьютере
+
+установка как обычно, как будто запустил мышкой
+PackageName | Install-Package
+
+psexec64.exe \\user_pc c:\Windows\system32\msiexec.exe /i
+c:\Windows\Temp\7-zip.msi /qn /quiet /norestart
+
+/qn – полностью скрывает процесс установки от пользователя
+/quiet - тихий режим без взаимодействия с пользователем. Все окна будут скрыты. Если после обновления понадобиться перезагрузка, то она будет произведена.
+/norestart – отменяет перезагрузку, если она необходима после установки программы.
+
+Параметры установки
+</package | /i> <Product.msi>
+		Установка или настройка продукта
+/a <Product.msi>
+		Административная установка - установка продукта в сеть
+	/j<u|m> <Product.msi> [/t <список преобразований>] [/g <код языка>]
+	Объявление о продукте: "m" - всем пользователям; "u" - текущему пользователю
+
+
+
+
+
+
+
+
+
+
+
+
+
+скрипт опроса установленных программ (не проверял)
+
+
+if (!([Diagnostics.Process]::GetCurrentProcess().Path -match
+'\\syswow64\\'))
+{
+    $unistallPath = "\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\"
+    $unistallWow6432Path =
+"\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\"
+ @(
+ if (Test-Path "HKLM:$unistallWow6432Path" ) { Get-ChildItem
+"HKLM:$unistallWow6432Path"}
+        if (Test-Path "HKLM:$unistallPath" ) { Get-ChildItem
+"HKLM:$unistallPath" }
+ if (Test-Path "HKCU:$unistallWow6432Path") { Get-ChildItem
+"HKCU:$unistallWow6432Path"}
+        if (Test-Path "HKCU:$unistallPath" ) { Get-ChildItem
+"HKCU:$unistallPath" }
+    ) |
+    ForEach-Object {Get-ItemProperty $_.PSPath } |       
+    Where-Object {
+ $_.DisplayName -and
+ !$_.SystemComponent -and
+ !$_.ReleaseType -and
+ !$_.ParentKeyName -and
+ ($_.UninstallString -or $_.NoRemove) } |
+    Sort-Object DisplayName |
+    Select-Object DisplayName
+}
+else
+{
+    "You are running 32-bit Powershell on 64-bit system. Please run
+64-bit Powershell instead." | Write-Host -ForegroundColor Red
+}
+
+
+
+https://winitpro.ru/index.php/2023/05/03/audit-logov-pechati-windows/
+
+https://remontka.pro/installed-programs-list-windows/

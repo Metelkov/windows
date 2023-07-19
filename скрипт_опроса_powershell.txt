@@ -1,0 +1,113 @@
+выполнить процесс в фоне - тут выполняем блокнот, он запустится, но не будет показан, т.к.
+в фоне и выйти из него - снять задачу (процесс), поэтому - никакого интерактива
+Start-Process -WindowStyle hidden «C:/Windows/Notepad.exe»
+
+подключаемся к компьютеру
+enter-pssession -computername <computer>
+
+enter-pssession -computername katkova
+
+
+enter-pssession -computername ikmm
+doctor
+electronic01
+enter-pssession -computername pc4
+enter-pssession -computername quality06
+enter-pssession -computername sidorova
+enter-pssession -computername sotdirzakup
+enter-pssession -computername sotex_swift5
+enter-pssession -computername zarbuh
+
+
+echo " Пользователь компьютера (логин)"
+$userinfo = Get-WmiObject -ComputerName 'localhost' -Class Win32_ComputerSystem
+$user = $userinfo.UserName -split '\\'
+$user[1]
+echo "-----------end block--------------------------"
+echo "процессор"
+Get-CimInstance -ClassName Win32_Processor | Select-Object -ExcludeProperty "CIM*"
+Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object -Property SystemType
+echo "-----------end block--------------------------"
+echo "материнка и имя компьютера"
+Get-CimInstance -ClassName Win32_ComputerSystem
+wmic baseboard get Manufacturer
+wmic baseboard get product
+echo "-----------end block--------------------------"
+echo "более коротко о диске"
+Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3" |
+  Measure-Object -Property FreeSpace,Size -Sum |
+    Select-Object -Property Property,Sum
+echo "т.е. "
+echo "-----------end block--------------------------"
+echo "информация о памяти Гб"
+Get-WmiObject Win32_PhysicalMemory | Measure-Object -Property capacity -Sum | Foreach {"{0:N2}" -f ([math]::round(($_.Sum / 1GB),2))}
+echo "-----------end block--------------------------"
+
+echo "сколько ядер у процессора"
+WMIC CPU Get DeviceID
+WMIC CPU Get NumberOfCores
+WMIC CPU Get NumberOfLogicalProcessors
+echo "-----------end block--------------------------"
+
+echo "сколько слотов под память"
+wmic MEMORYCHIP get BankLabel
+wmic MEMORYCHIP get DeviceLocator
+wmic MEMORYCHIP get Capacity
+wmic MEMORYCHIP get Speed
+BankLabel — здесь указаны разъемы, к которым подключены соответствующие планки ОЗУ;
+Capacity — это объем памяти для указанной планки;
+DeviceLocator — слоты;
+Speed — быстродействие соответствующего модуля.
+echo "-----------end block--------------------------"
+
+
+wmic MEMORYCHIP get BankLabel,DeviceLocator,Capacity,Speed
+
+------- пробуем в локальном терминале --------------------
+echo "-------- имя -------------"
+Get-WMIObject -Class Win32_ComputerSystem -Computer findir |Select-Object Username
+echo "-------- конец блока -------------"
+echo "-------- процессор -------------"
+Get-WmiObject -Class Win32_Processor -ComputerName findir | Select-Object -Property ["Name"]* -Wait
+echo "-------- конец блока -------------"
+echo "-------- мат плата -------------"
+Get-WmiObject -Class Win32_ComputerSystem -ComputerName findir
+echo "-------- конец блока -------------"
+echo "-------- диск -------------"
+Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3" -ComputerName findir |
+  Measure-Object -Property Size -Sum | Select-Object -Property Property,Sum
+echo "-------- конец блока -------------"
+echo "-------- память -------------"
+Get-WmiObject Win32_PhysicalMemory -ComputerName findir. | Measure-Object -Property capacity -Sum | Foreach {"{0:N2}" -f ([math]::round(($_.Sum / 1GB),2))}
+echo "-------- конец блока -------------"
+
+
+обход запрета выполнения сценариев
+powershell.exe -noprofile -executionpolicy bypass -file .\get-ptm.ps1
+где .\get-ptm.ps1 - исполняемый скрипт
+
+
+опросить модуль tpm
+get-tpm
+
+
+-----------------------------------------------
+Foreach {"{0:N2}" -f ([math]::round(($_.Sum / 1GB),2))}
+Foreach {"{0:округлить до знака после зап}" -f ([math]::round(($_.взять строку где есть "Sum" / 1GB),2))}
+
+
+
+
+проч инф о процессоре, не очень нужно
+Get-ComputerInfo  -Property *proc*,*mem*
+
+echo " Пользователь компьютера (логин)"
+Get-WmiObject -Class Win32_ComputerSystem | Select-Object UserName
+
+Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object UserName
+echo "-----------end block--------------------------"
+выведет имя последнего залогиненого пользователя
+Get-wmiobject -Computername Комп1 win32_computerSystem).Username
+
+wmic baseboard get Manufacturer — для определения производителя материнской платы.
+wmic baseboard get product — позволяет определить модель материнки.
